@@ -39,7 +39,7 @@ export async function publicSummary(_req: Request, res: Response) {
 
 /** Public: GET /api/stats/city/:slug — no auth required */
 export async function publicCityStats(req: Request, res: Response) {
-  const city = slugToCity[req.params.slug?.toLowerCase()];
+  const city = slugToCity[String(req.params.slug ?? '').toLowerCase()];
   if (!city) {
     res.status(404).json({ error: 'City not found' });
     return;
