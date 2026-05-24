@@ -1,0 +1,8 @@
+.vercel
+.env*.local
+
+# Backend secrets — never commit
+Backend/.env
+Backend/dist/
+Backend/node_modules/
+Frontend/node_modules/

@@ -1,0 +1,487 @@
+# CivicSync — Comprehensive Implementation Plan
+
+---
+
+## PHASE 0 — Stabilize, Polish & Complete Existing Features
+### Goal: Make what exists actually work and look production-ready
+
+---
+
+### 0.1 Volunteer Hub — Fix Missing Data
+
+**Problem:** Volunteer hub data not rendering on frontend despite backend routes existing.
+
+**Tasks:**
+- Audit the frontend Volunteer Hub component and identify where the API call breaks or returns empty
+- Verify QR generation and scan flow renders correctly
+- Adopt-a-spot cards must show commitment status, upkeep history, and the adopter's name
+- Add empty state UI when no drives exist in a city rather than blank screen
+
+---
+
+
+---
+
+#### 0.3.1 Design System Foundation
+
+Before touching individual screens, establish a consistent base.
+
+**Tasks:**
+- Audit all Tailwind utility usage and consolidate into consistent spacing scale — pick 4/8/12/16/24/32/48 and stick to it
+- Define typography scale: display, heading, subheading, body, caption, label — apply consistently everywhere
+- Define a color token set using CSS variables or Tailwind config: primary, secondary, muted, destructive, success, warning, surface, border
+- Standardize border radius across all components — pick one scale and apply it (cards, inputs, buttons, badges all consistent)
+- Define elevation/shadow scale: flat, low, medium, high — cards use low, modals use medium, dropdowns use high
+- All interactive elements must have defined hover, focus, active, and disabled states
+- Create a spacing audit document listing every screen and its problem areas before fixing
+
+---
+
+#### 0.3.2 Navbar
+
+**Problems:** Alignment inconsistent, spacing off, doesn't feel premium.
+
+**Tasks:**
+- Fix vertical alignment of all navbar items — logo, links, user avatar, notification bell
+- Add consistent left/right padding that respects the max-width container
+- Active link indicator must be visually distinct — underline, pill background, or colored dot
+- User avatar dropdown must have smooth open/close animation
+- Notification bell must show unread count badge with proper positioning
+- Mobile hamburger menu must be properly spaced, not cramped
+- On scroll, add subtle backdrop blur or shadow to differentiate navbar from content
+- Role badge (Citizen, Mayor, State Admin) should appear near avatar cleanly
+
+---
+
+#### 0.3.3 Layout and Spacing
+
+**Problems:** Too much empty space, desktop wastes horizontal space, stretched layouts.
+
+**Tasks:**
+- Set a consistent max-width container (1280px or 1440px) with auto horizontal margins
+- All page layouts must use this container — nothing bleeds edge-to-edge except hero sections and maps
+- Implement a proper sidebar + content layout for dashboard pages instead of full-width single column
+- Use a 12-column grid system for dashboard panels — stats take 3 cols each, charts take 6-8 cols
+- Section spacing must be consistent — use the spacing scale, not arbitrary padding
+- Remove all instances of unnecessarily tall empty sections
+- On mobile, stack columns properly — no horizontal overflow, no tiny unreadable text
+
+---
+
+#### 0.3.4 Cards and Stats
+
+**Problems:** Flat, basic, no visual depth.
+
+**Tasks:**
+- Redesign stat cards with icon, number, label, and trend indicator (up/down arrow with percentage)
+- Add subtle gradient or colored left border on stat cards to differentiate categories
+- Issue cards must have clear visual hierarchy: title prominent, meta info (location, category, date) secondary, status badge always visible
+- Category icons on issue cards — use consistent icon set (Lucide or Heroicons, pick one)
+- Status badges must have distinct background colors per status — pending is amber, in_progress is blue, resolved is green, breach is red
+- Card hover state must lift slightly (shadow increase + tiny translateY) with smooth transition
+- Images on cards must be aspect-ratio constrained, not stretched
+- Add skeleton loading states for all card grids — no blank flashes
+
+---
+
+#### 0.3.5 Visual Hierarchy
+
+**Problems:** Important info doesn't stand out, everything looks equally weighted.
+
+**Tasks:**
+- Issue title must be the largest text element on the card
+- SLA breach indicator must be visually aggressive — red border, pulsing dot, or warning icon — not subtle
+- Upvote count, status, and category must be immediately scannable without reading
+- Mayor dashboard tasks with SLA breach must sort to top and have distinct visual treatment
+- Use font weight variation deliberately — bold for numbers and titles, regular for body, light for timestamps
+- Reduce text-gray-500 overuse — too much content is the same muted color, creating visual flatness
+
+---
+
+#### 0.3.6 Form Inputs
+
+**Problems:** Generic, unpolished.
+
+**Tasks:**
+- All text inputs must have clear focus ring using the primary color
+- Add floating labels or clear label positioning — no placeholder-only inputs
+- Error states must show red border + error message below, not just a toast
+- Success states for completed fields where appropriate
+- Textarea for issue description must auto-resize or have a minimum comfortable height
+- File upload zone must be a proper drag-and-drop area with icon and instruction text, not a raw input
+- Select dropdowns must be styled consistently — no native browser default selects
+- Form sections on the issue creation page must be grouped logically with section headers
+- Submit buttons must show loading spinner during submission, not just freeze
+
+---
+
+#### 0.3.7 Map Section
+
+**Problems:** Oversized, poorly balanced with the form.
+
+**Tasks:**
+- On issue creation form, map must take 40-45% of the available width on desktop, form takes the rest
+- Map height must be fixed and reasonable — not full viewport height
+- Add clear instruction text above the map: "Click to pin your issue location"
+- Selected location must show coordinates or reverse-geocoded address below the map
+- Map controls (zoom, locate me) must be styled consistently with the rest of the UI
+- On mobile, map stacks below the form fields but remains usable
+- Map on issue detail page can be slightly larger but still constrained in a card
+
+---
+
+#### 0.3.8 Gamification UI
+
+**Problems:** Progress bar outdated, not visually rewarding, gamification exists but doesn't feel exciting.
+
+**Tasks:**
+- Redesign the rank/XP progress bar — make it chunky, colorful, with rank name at start and next rank at end
+- Show XP earned recently as a "+25 XP" floating animation when user gains points (CSS keyframe animation)
+- Current rank must be displayed as a proper badge with icon, not just text
+- Show distance to next rank prominently — "You need 150 more XP to reach Civic Guardian"
+- Karma points must be displayed with a coin/token icon prominently on profile and navbar
+- Add a "Recent Activity" feed on profile showing last 5 XP-earning actions
+
+---
+
+#### 0.3.9 Badge Section
+
+**Problems:** Locked/unlocked differentiation is weak.
+
+**Tasks:**
+- Unlocked badges: full color, sharp, with name and earn date below
+- Locked badges: desaturated/grayscale with a lock icon overlay and a short unlock condition hint
+- Badge grid must be consistently sized — same card dimensions for all
+- Hovering a locked badge shows a tooltip with the exact unlock condition
+- Hovering an unlocked badge shows when it was earned and what it represents
+- Newly earned badge must trigger a subtle highlight animation when user visits profile after earning it
+- Separate badges into categories: Reporting, Community, Volunteer, Special — with tabs or section headers
+
+---
+
+#### 0.3.10 Micro-interactions and Animations
+
+**Problems:** Missing hover effects, animations, and micro-interactions make the UI feel static.
+
+**Tasks:**
+- All buttons must have smooth hover transitions (100-150ms, not instant)
+- Cards must have hover lift effect as described above
+- Page transitions — add a subtle fade or slide when navigating between pages
+- Upvote button must animate when clicked — scale bounce + color fill
+- Notification bell must wobble slightly when new notification arrives
+- Status change on an issue must animate the badge color change
+- Loading states must use skeleton screens, not spinners alone
+- Modal open/close must have smooth scale + fade animation
+- Toast notifications must slide in from top-right and auto-dismiss with a progress indicator
+- Success states on form submission must feel rewarding — checkmark animation
+
+---
+
+#### 0.3.11 Text Contrast and Readability
+
+**Tasks:**
+- Audit all text-gray-* usages — ensure body text is at minimum 4.5:1 contrast ratio
+- Dark mode consideration — if dark mode exists or is planned, verify all custom colors work
+- Remove any white text on light backgrounds
+- Ensure all status badges have sufficient contrast between text and background
+- Line height on body text must be at least 1.5 for readability
+- Avoid all-caps for anything longer than 3 words
+
+---
+
+#### 0.3.12 Developer and Debug Text Cleanup
+
+**Tasks:**
+- Search entire frontend codebase for console.log statements — remove all that aren't error logs
+- Remove any hardcoded test strings, "TODO", "FIXME", or debug labels visible in UI
+- Remove any visible component names or data-testid attributes rendered as visible text
+- Ensure no raw JSON or API response data is ever rendered directly to screen
+- Check for any "undefined", "null", or "[object Object]" showing up in the UI
+
+---
+
+### 0.4 Certificate Redesign
+
+**Problem:** The downloadable PDF certificate looks ugly and doesn't feel like a meaningful reward.
+
+**Tasks:**
+- Redesign the certificate layout in pdfkit with a proper header, civic seal/logo placeholder, and structured body
+- Certificate must include: citizen's full name, achievement title, issue reference number, city, date, and a QR code linking to the live issue
+- Use a decorative border frame — pdfkit supports drawing rectangles and lines, use them to create a proper bordered layout
+- Typography hierarchy: large decorative title at top, medium body text, small reference details at bottom
+- Add a color accent band at top and bottom using the brand primary color
+- Mayor's name and city seal area should appear as a signature/authority block
+- Certificate file name must be meaningful: CivicSync_Certificate_IssueName_Date.pdf not certificate.pdf
+- Preview the certificate in-browser before download — add a modal with an iframe preview if possible
+- Certificates earned for different achievements must have distinct titles — not all saying the same thing
+
+---
+
+### 0.5 Missing Frontend Features
+
+**Tasks:**
+- State Admin: Build article moderation UI — pending articles list, approve/reject buttons, rejection reason input, approved articles visible publicly
+- State Admin: Build Contractor Status page — table of all contractors across cities, their specialty, assigned issues count, resolution rate, current status
+- Mayor Dashboard: Build City-Level User Leaderboard tab — top 10-20 citizens in the city ranked by XP/karma/issues reported/resolved
+
+---
+
+## PHASE 1 — Identity, Trust and Role Completion
+### Goal: Make the platform trustworthy and structurally complete
+
+---
+
+### 1.1 Phone OTP Verification
+
+**Tasks:**
+
+- Add phone number field to registration flow
+- Verified phone unlocks "Verified Citizen" tier — visible checkmark on profile
+- Unverified citizens can still use the platform but cannot do community resolution or adopt-a-spot
+- Re-verification flow if phone number changes
+
+---
+
+### 1.2 Verified Citizen Tier
+
+**Tasks:**
+- Add verifiedCitizen boolean and verificationMethod field to User schema
+- Gate adopt-a-spot behind verified status
+- Show verified checkmark badge on citizen profile and on their issue cards
+- Mayor and state admin can see verification status in their views
+- Add "Verify your account" prompt/banner for unverified users — not intrusive, dismissible but persistent
+
+---
+
+### 1.3 Department Head Role
+
+**Tasks:**
+- Add department_head role to User schema
+- Department Head belongs to a city and a specific category (roads, water, sanitation, etc.)
+- Mayor can create and assign Department Head accounts from their dashboard
+- Department Head dashboard: scoped only to their category's issues in their city
+- Department Head can: acknowledge issues, assign to contractors in their department, update status, sign off on field verification
+- Department Head cannot: access other categories, broadcast city-wide, view other departments' scorecards
+- Add Department Head to the issue assignment flow — Mayor assigns to Dept Head, Dept Head assigns to Contractor
+- SLA alerts go to Department Head first, then escalate to Mayor if unacknowledged
+- Department Head performance metrics appear in Mayor's scorecard view
+
+---
+
+### 1.4 Revised Issue Lifecycle
+
+**Tasks:**
+- Update Issue schema status enum: draft, submitted, under_triage, acknowledged, assigned, in_progress, field_verification, community_verified, closed, reopened
+- Draft status: saved locally or in DB but not visible in public feed
+- Under Triage: automatic 2-hour window after submission for triage jobs to run
+- Assigned: new status set when contractor is explicitly assigned with contractor ID and timestamp
+- Field Verification: contractor marks work complete, triggers notification to Department Head
+- Community Verified: original reporter or verified citizens in radius confirm fix
+- Closed: final state after verification
+- Reopened: available within 30 days of closing if ghost audit or reporter flags recurrence
+- Update all frontend status displays, filters, and badge colors for new statuses
+- Update all backend route logic and cron jobs to handle new lifecycle
+- Migration script for existing issues to map old statuses to new ones
+
+---
+
+### 1.5 Contractor Role Completion
+
+**Tasks (some may be partially done):**
+- Contractor dashboard: filtered view of issues in their specialty and city
+- Contractor can update status from assigned to in_progress to field_verification
+- Contractor can upload field photos (during and after)
+- Contractor cannot reassign issues or change category
+- Contractor profile shows: specialty, assigned issues count, completed count, average resolution time, rating
+- Mayor and Department Head can rate contractor after issue closure
+- Contractor receives notifications when assigned, when SLA approaches, when issue is reopened
+
+---
+
+
+
+---
+
+**Tasks:**
+- Replace deterministic summary generation with an actual LLM API call 
+- Issue summary: send category + description + location to LLM, get back a clean 2-sentence public summary
+- Severity scoring: LLM rates issue urgency 1-5 based on description, category, and any safety risk keywords
+- Duplicate detection upgrade: use text embedding similarity in addition to proximity + category
+- Image analysis: when photo is uploaded, call API to confirm photo matches reported category — flag mismatches for manual review
+- Abuse detection: LLM classifier replacing keyword list — more nuanced, handles Punjabi/Hindi text
+- Translation: auto-detect language and translate issue description to English for mayor dashboard while preserving original
+- All AI calls must be async, non-blocking — issue submits successfully and triage runs in background
+- Store AI triage results in issue document: summary, severity, duplicateOf, abuseScore, translatedDescription, imageVerified
+- Triage failures must not block issue submission — fallback to manual review flag
+
+---
+
+### 2.2 Analytics Dashboard Upgrades
+
+**Tasks:**
+- Resolution rate trend charts: per department, per city, monthly view with Recharts line chart
+- Average resolution time vs SLA target: bar chart comparison per category
+- Post-resolution satisfaction score: add 1-5 star rating prompt to original reporter 24 hours after issue closes
+- Satisfaction scores aggregate on mayor scorecard
+- Budget utilization: contractor cost estimates vs actuals per issue, rolled up to department and city level
+- Anomaly detection: if issue count in a category spikes 2x above rolling 7-day average, auto-generate alert
+- Exportable monthly governance report: PDF with all key metrics, auto-generated by pdfkit, downloadable from mayor dashboard
+- State admin gets statewide version of same report
+
+### 2.3 Priority Scoring System
+
+**Tasks:**
+- Add priorityScore field to Issue schema (computed, not user-set)
+- Score computed from: upvote count (weighted), location density of nearby issues, issue age, category severity baseline, AI severity score
+- Score recalculated by cron job every 6 hours
+- Mayor dashboard task list sorted by priority score by default with option to sort by SLA breach
+- High priority issues (score above threshold) get visual indicator in all views
+
+
+
+### Goal: Meet citizens where they are
+
+---
+
+
+---
+
+---
+
+
+---
+
+
+
+---
+
+
+---
+
+
+---
+
+
+---
+
+### 5.1 Immutable Audit Trail
+
+**Tasks:**
+- Create a separate AuditLog MongoDB collection — append-only (no updates or deletes in application code)
+- Every status change, assignment, broadcast, escalation, and moderation action writes an audit log entry: actor, action, target entity, timestamp, previous value, new value
+- Audit log readable by Mayor (their city), State Admin (their state), Super Admin (all)
+- Citizen can request their own issue audit trail
+- Audit log export as PDF for RTI-type requests
+
+---
+
+### 5.2 Public Accountability Page
+
+**Tasks:**
+- Build a public-facing page (no login required) showing city-level stats
+- Stats shown: total issues reported, resolution rate, average resolution time, top categories, current open issues count
+- Data refreshed daily (not real-time to prevent scraping)
+- City selector to compare across Punjab cities
+- Share-friendly URLs: /city/ludhiana/stats
+- Embeddable widget version for municipal websites
+
+---
+
+### 5.3 Super Admin Role
+
+**Tasks:**
+- Add super_admin role to User schema
+- Super admin panel (separate route, heavily protected): manage all users, view platform-wide stats, create/deactivate state admin accounts, configure platform settings
+- Platform settings managed by super admin: SLA thresholds per category, karma point values per action, badge unlock conditions, triage parameters
+- Super admin can impersonate any role for debugging (with full audit log of impersonation sessions)
+- Super admin sees complete audit log across all cities and states
+
+---
+
+### 5.4 Contractor Rating and Performance History
+
+**Tasks:**
+- After issue closure, Mayor or Department Head rates the contractor 1-5 stars with optional comment
+- Contractor profile shows: average rating, total jobs, completion rate, average time per job, recent ratings
+- Mayor can filter contractor assignment suggestions by rating
+- Contractors below threshold rating flagged for review in mayor dashboard
+- State admin sees contractor performance across cities
+
+---
+
+## PHASE 6 — Gamification Maturity
+### Goal: Make participation genuinely rewarding, not just cosmetic
+
+---
+
+### 6.1 Squad/RWA Team System
+
+**Tasks:**
+- Citizens can create or join a local squad tied to a neighborhood/ward
+- Squad has: name, area, member count, collective XP, issues reported and resolved
+- Squad leaderboard visible to Mayor (ward-level competition)
+- Squad challenges: "Report 10 issues this month as a squad" with bonus XP reward
+- Squad captain role: can post squad announcements, see member contributions
+- Squad membership visible on citizen profile
+
+---
+
+### 6.2 Streak System
+
+**Tasks:**
+- Track consecutive days/weeks of activity per citizen (reporting, upvoting, volunteering counts)
+- Streak displayed on profile with flame icon and count
+- Streak milestones grant bonus karma: 7-day streak, 30-day streak, 100-day streak
+- Streak broken if no activity for 48 hours
+- Streak freeze: once per month, a citizen can spend karma to preserve their streak
+
+---
+
+### 6.3 Seasonal Events and Challenges
+
+**Tasks:**
+- Admin can create time-limited events with: name, description, start/end date, eligible actions, bonus XP multiplier
+- Example events: Monsoon Pothole Drive, Swachh Punjab Month, Green City Challenge
+- Active event banner on citizen feed with countdown timer
+- Progress tracker per citizen for active event
+- Event completion badge added to profile
+- State admin creates statewide events, Mayor creates city-specific events
+
+---
+
+### 6.4 Verifiable Impact Certificates
+
+**Tasks:**
+- Certificate QR code links to a public verification URL: /verify/certificate/:id
+- Verification page shows: citizen name, achievement, linked issue (with before/after photos), date, city seal
+- Certificate cannot be forged — verification page pulls live data from DB
+
+---
+
+---
+
+### 7.2 Offline Issue Drafting
+
+**Tasks:**
+- If user is offline and tries to submit an issue, save to IndexedDB as draft
+- Show "You're offline — your issue has been saved as a draft" message
+- When connectivity returns, prompt user to review and submit saved drafts
+- Drafts sync automatically in background when online
+- Draft count shown as badge on the report issue button
+
+---
+
+### 7.3 GPS and Native Integration
+
+**Tasks:**
+- Auto-populate issue location from device GPS on mobile
+- One-tap "Use my location" button on issue form
+- Request location permission gracefully with explanation of why it's needed
+- Native share: issue detail page has share button that triggers native share sheet on mobile
+- Camera integration: issue photo upload opens camera directly on mobile, not file picker
+
+---
+
+
+
+---

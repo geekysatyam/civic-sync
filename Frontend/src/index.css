@@ -1,0 +1,268 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 210 40% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 40% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 40% 10%;
+
+    --primary: 211 52% 25%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 211 52% 25%;
+
+    --muted: 210 30% 94%;
+    --muted-foreground: 215 20% 38%;
+
+    --accent: 217 91% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 217 91% 60%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 211 52% 15%;
+    --sidebar-foreground: 210 40% 90%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 211 52% 20%;
+    --sidebar-accent-foreground: 210 40% 95%;
+    --sidebar-border: 211 40% 25%;
+    --sidebar-ring: 217 91% 60%;
+
+    --navy: 211 52% 25%;
+    --navy-deep: 211 52% 15%;
+    --navy-light: 211 40% 35%;
+
+    /* Spacing scale (4px base) */
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-6: 1.5rem;
+    --space-8: 2rem;
+    --space-12: 3rem;
+
+    /* Elevation */
+    --shadow-low: 0 1px 2px hsl(211 52% 25% / 0.06), 0 1px 3px hsl(211 52% 25% / 0.08);
+    --shadow-medium: 0 4px 12px hsl(211 52% 25% / 0.08), 0 2px 4px hsl(211 52% 25% / 0.04);
+    --shadow-high: 0 12px 32px hsl(211 52% 25% / 0.12), 0 4px 8px hsl(211 52% 25% / 0.06);
+  }
+
+  .dark {
+    --background: 211 52% 8%;
+    --foreground: 210 40% 95%;
+
+    --card: 211 52% 12%;
+    --card-foreground: 210 40% 95%;
+
+    --popover: 211 52% 12%;
+    --popover-foreground: 210 40% 95%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 211 40% 18%;
+    --secondary-foreground: 210 40% 95%;
+
+    --muted: 211 30% 18%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 217 91% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 211 30% 22%;
+    --input: 211 30% 22%;
+    --ring: 217 91% 60%;
+
+    --sidebar-background: 211 52% 8%;
+    --sidebar-foreground: 210 40% 90%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 211 52% 15%;
+    --sidebar-accent-foreground: 210 40% 95%;
+    --sidebar-border: 211 30% 18%;
+    --sidebar-ring: 217 91% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .leaflet-container {
+    /* Keep Leaflet tiles/controls inside the map stacking context so dialogs can overlay. */
+    z-index: 0;
+  }
+}
+
+@layer utilities {
+  .text-gradient-civic {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--success)));
+  }
+
+  .text-gradient-brand {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(90deg, #8b5cf6 0%, #3b82f6 50%, #06b6d4 100%);
+  }
+
+  .bg-gradient-brand {
+    background-image: linear-gradient(135deg, #6366f1 0%, #8b5cf6 40%, #3b82f6 100%);
+  }
+
+  .bg-gradient-hero {
+    background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(99, 102, 241, 0.35), transparent),
+      radial-gradient(ellipse 50% 40% at 90% 20%, rgba(139, 92, 246, 0.2), transparent),
+      radial-gradient(ellipse 40% 30% at 10% 60%, rgba(59, 130, 246, 0.15), transparent),
+      linear-gradient(180deg, #0f172a 0%, #1e1b4b 45%, #0f172a 100%);
+  }
+
+  .bg-section-lavender {
+    background: linear-gradient(180deg, #f8f7ff 0%, #ffffff 50%, #f5f3ff 100%);
+  }
+
+  .glass-nav {
+    @apply backdrop-blur-xl border border-white/10;
+    background: rgba(15, 23, 42, 0.75);
+  }
+
+  .glass-card {
+    @apply backdrop-blur-md border border-white/10 shadow-2xl;
+    background: rgba(30, 41, 59, 0.6);
+  }
+
+  .btn-gradient {
+    @apply text-white font-semibold shadow-lg shadow-indigo-500/30 transition-all hover:shadow-xl hover:shadow-indigo-500/40 hover:scale-[1.02];
+    background-image: linear-gradient(135deg, #6366f1, #8b5cf6, #3b82f6);
+  }
+
+  .hero-grid {
+    background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  .page-shell {
+    @apply w-full mx-auto px-4 sm:px-6;
+    max-width: 80rem; /* 1280px */
+  }
+
+  .shadow-elevation-low {
+    box-shadow: var(--shadow-low);
+  }
+
+  .shadow-elevation-medium {
+    box-shadow: var(--shadow-medium);
+  }
+
+  .shadow-elevation-high {
+    box-shadow: var(--shadow-high);
+  }
+
+  .form-section-title {
+    @apply text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3;
+  }
+
+  .input-focus-ring:focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
+
+/* City grid animated background */
+@keyframes grid-move {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-20px); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-red {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(0 84% 60% / 0.4); }
+  50% { box-shadow: 0 0 0 12px hsl(0 84% 60% / 0); }
+}
+
+.animate-grid-move {
+  animation: grid-move 8s ease-in-out infinite alternate;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.6s ease-out forwards;
+}
+
+.animate-pulse-red {
+  animation: pulse-red 2s ease-in-out infinite;
+}
+
+@keyframes upvote-bounce {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.2); }
+  65% { transform: scale(0.92); }
+  100% { transform: scale(1); }
+}
+
+.animate-upvote-bounce {
+  animation: upvote-bounce 0.45s ease-out;
+}

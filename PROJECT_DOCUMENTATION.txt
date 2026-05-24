@@ -1,0 +1,410 @@
+CIVICSYNC — PROJECT DOCUMENTATION (What / Why / How)
+====================================================
+
+Project name
+------------
+CivicSync
+
+One-line summary
+----------------
+CivicSync is a civic-tech platform that lets citizens report local issues, lets municipal leadership track/acknowledge/fix them with accountability (SLA timers + broadcasts), and lets state admins monitor cross-city trends and emergencies — with gamification, community-led resolutions, maps/heatmaps, and automated “AI-like” triage (deterministic server-side logic).
+
+
+Table of contents
+-----------------
+1) What the project is
+2) Why the project exists (problem + goals)
+3) Who uses it (roles)
+4) What it can do (features)
+5) How it works (architecture)
+6) Tech stack
+7) Folder structure
+8) Environment variables & configuration
+9) How to run locally (step-by-step)
+10) API overview (high-level routes)
+11) Data model (high-level entities)
+12) Background jobs (cron)
+13) Testing & QA
+14) Deployment notes (local + typical hosting)
+15) Security notes & operational guidance
+16) Key reference docs in this repo
+
+
+1) WHAT THE PROJECT IS
+----------------------
+CivicSync is a full-stack web application with:
+- A citizen-facing experience (feed, issue posting, issue detail, profile, karma perks, volunteer hub, polls, notifications)
+- A mayor/municipality dashboard (task management, city heatmap, department scorecard, predictive maintenance, SLA alerts, CSR/ghost audit panels)
+- A state admin dashboard (state heatmap, city leaderboard, trend analysis, emergency feed with escalation)
+
+
+2) WHY THE PROJECT EXISTS (PROBLEM + GOALS)
+-------------------------------------------
+Common civic reporting failures:
+- Complaints disappear into “black boxes” with no public tracking.
+- No accountability clocks (SLA) for acknowledgement/resolution.
+- No structured way for citizens to collaborate (volunteering, adopting spots).
+- Hard to see hotspots/trends across neighborhoods/cities.
+
+Goals of CivicSync:
+- Make reporting easy, structured, and location-aware.
+- Make accountability visible (status + timer + SLA breach alerts).
+- Encourage community participation (drives, adopt-a-spot, karma rewards).
+- Support governance operations with dashboards and alerts.
+- Add automated triage to improve signal-to-noise (summary, duplicate detection, abuse filtering, translation labeling, cost/resource estimation).
+
+
+3) WHO USES IT (ROLES)
+----------------------
+Citizen
+- Reports issues, upvotes issues, participates in volunteer drives and polls.
+- Can propose community resolution (with verification flow).
+- Sees personal stats, karma points and rewards (leaderboards are restricted to mayors/state admins).
+
+Contractor
+- Views issues categorized under their specialty (e.g. roads, water).
+- Tracks status and updates regarding their assigned tasks.
+
+Mayor (Municipal dashboard)
+- Manages issues within their city: acknowledge, assign/update status, upload “after fix” photos, broadcast updates.
+- Tracks department performance, predictive maintenance alerts, SLA breaches.
+- Oversees CSR forwarding and ghost audit logs.
+- Views city-level user leaderboard to see top contributors in their city.
+
+State Admin
+- Monitors multiple cities at once: statewide heatmap, city leaderboard, trend insights.
+- Sees emergency/red-alert feed across cities; can “ping” mayors to escalate.
+- Can view contractor status page across the state.
+- Can moderate and approve story articles.
+
+
+4) WHAT IT CAN DO (FEATURES)
+----------------------------
+Core issue reporting & tracking
+- Create an issue with category, description, suggested solution, and location (map).
+- Upload photos (before/after).
+- Status lifecycle (pending → acknowledged → in_progress → resolved, etc.).
+- Accountability clock and SLA tracking (including breach flags/alerts).
+
+Automated triage (“AI simulation”, deterministic)
+- Summary generation from category + keywords.
+- Cost/resource estimation using lookup tables.
+- Duplicate detection by proximity + category (bundle duplicates).
+- Abuse keyword filtering and “Under Review” gating.
+- Translation label detection (e.g., Gurmukhi/Devanagari script detection).
+
+Citizen engagement & community mechanisms
+- Upvotes and broadcasts.
+- Community resolution: citizen uploads fix photo; verifier approves/rejects.
+- Volunteer drives (“Sweat & Tools” pledges, scheduling).
+- Adopt-a-spot commitments.
+- Karma rewards/perks redemption.
+- Local polls (“Nukkad” polls) with geofencing/radius.
+
+Maps & analytics
+- Citizen map views for issue context.
+- Mayor city heatmap (issue density).
+- State heatmap (cross-city hotspots).
+
+Notifications
+- In-app notification feed (and email notifications for key events).
+
+
+5) HOW IT WORKS (ARCHITECTURE)
+------------------------------
+High-level
+- Frontend: React + TypeScript (Vite) SPA.
+- Backend: Node.js + Express (TypeScript) REST API.
+- Database: MongoDB (Mongoose).
+
+Request flow (typical)
+1) User uses the frontend (browser).
+2) Frontend calls backend endpoints under /api (via Axios).
+3) Backend authenticates (JWT access token + refresh flow), applies role guards, performs DB operations, runs triage services, and returns JSON responses.
+
+Dev convenience: Vite proxy
+- In development, the frontend dev server proxies /api to the backend to avoid CORS complexity.
+
+
+6) TECH STACK
+-------------
+Frontend
+- React 18 + TypeScript
+- Vite dev server
+- React Router
+- React Query (TanStack)
+- TailwindCSS + shadcn/ui (Radix components)
+- Leaflet + react-leaflet (maps)
+- Recharts (charts)
+- Axios (API calls)
+- Vitest (unit tests), Playwright (e2e tests dependency present)
+
+Backend
+- Node.js + Express (TypeScript, ESM modules)
+- MongoDB + Mongoose
+- Auth: JWT access token + refresh token via httpOnly cookie
+- Uploads: Multer + Cloudinary
+- Email: Resend
+- Cron jobs: node-cron
+- PDF generation: pdfkit
+- QR code generation: qrcode
+
+
+7) FOLDER STRUCTURE
+-------------------
+Repository root
+- frontend/   → React application
+- backend/    → Express API server
+- plan.md     → detailed implementation requirements/plan
+- QA.md       → QA checklist to verify flows end-to-end
+- .vercel/    → deployment-related metadata (if used)
+
+Backend
+backend/src/index.ts
+- Express app entrypoint, routes registration, DB connect, cron start
+
+backend/src/routes/
+- Route modules mounted under /api/*
+
+Frontend
+frontend/vite.config.ts
+- Vite dev server configuration (port, proxy)
+
+frontend/src/lib/api.ts
+- Axios instance, auth header injection, refresh-token retry logic
+
+
+8) ENVIRONMENT VARIABLES & CONFIGURATION
+----------------------------------------
+IMPORTANT SECURITY NOTE
+- Do NOT commit secrets (DB URI, JWT secrets, Cloudinary keys, Resend keys).
+- If any real secrets exist in your local files, rotate them immediately in the provider dashboards.
+
+Backend environment (backend/.env)
+- PORT=5000
+- MONGODB_URI=... (MongoDB Atlas or local MongoDB connection string)
+- JWT_SECRET=...
+- JWT_REFRESH_SECRET=...
+- CLOUDINARY_CLOUD_NAME=...
+- CLOUDINARY_API_KEY=...
+- CLOUDINARY_API_SECRET=...
+- RESEND_API_KEY=...
+- RESEND_FROM_EMAIL=... (sender identity configured in Resend)
+- CLIENT_URL=http://localhost:8080,http://localhost:5173   (comma-separated allowed origins)
+
+Frontend environment (frontend/.env.local or frontend/.env)
+- Usually not needed in dev (proxy handles /api).
+- Optional:
+  - VITE_API_URL=http://localhost:5000   (only if you are NOT using the Vite proxy)
+
+
+9) HOW TO RUN LOCALLY (STEP-BY-STEP)
+------------------------------------
+Prereqs
+- Node.js (LTS recommended)
+- MongoDB (Atlas connection OR local MongoDB running)
+
+Backend (API)
+1) Open a terminal in: backend/
+2) Install deps:
+   - npm install
+3) Create backend/.env using the keys described above.
+4) Run dev server:
+   - npm run dev
+5) Health check:
+   - GET http://localhost:5000/api/health  → { "ok": true }
+
+Optional: Seed data
+- backend includes seed scripts in package.json:
+  - npm run seed
+  - npm run seed:admin
+  - npm run seed:user
+
+Frontend (Web)
+1) Open a terminal in: frontend/
+2) Install deps:
+   - npm install
+3) Run dev server:
+   - npm run dev
+4) Open:
+   - http://localhost:8080
+
+How frontend talks to backend in dev
+- The Vite dev server listens on :8080 and proxies /api to http://127.0.0.1:5000
+- So the frontend calls /api/... and Vite forwards to the backend.
+
+
+10) API OVERVIEW (HIGH-LEVEL ROUTES)
+------------------------------------
+Base URL (dev)
+- Backend: http://localhost:5000
+- Frontend (dev): http://localhost:8080
+
+Health
+- GET /api/health
+
+Auth
+- /api/auth
+  - POST /register
+  - POST /login
+  - POST /logout
+  - POST /refresh
+  - GET  /me
+
+Issues
+- /api/issues
+  - GET    /
+  - POST   /
+  - GET    /:id
+  - PATCH  /:id/upvote
+  - PATCH  /:id/acknowledge
+  - PATCH  /:id/status
+  - POST   /:id/photo
+  - POST   /:id/broadcast
+  - POST   /:id/community-resolve
+  - PATCH  /:id/verify-resolve
+  - POST   /:id/flag-fake
+  - POST   /:id/ghost-response
+
+Users / Profile / Certificates
+- /api/users
+  - GET   /profile
+  - PATCH /profile
+  - GET   /leaderboard
+  - GET   /:id/certificates
+
+Polls
+- /api/polls
+  - GET  /
+  - POST /
+  - POST /:id/vote
+  - GET  /archived
+
+Volunteer hub
+- /api/volunteer
+  - GET  /drives
+  - POST /drives
+  - POST /drives/:id/pledge
+  - POST /qr/generate
+  - POST /qr/scan
+  - GET  /spots
+  - POST /spots/:id/adopt
+
+Karma / rewards
+- /api/karma
+  - GET  /rewards
+  - POST /redeem/:id
+
+Mayor dashboard APIs
+- /api/mayor
+  - GET  /tasks
+  - GET  /heatmap
+  - GET  /scorecard
+  - GET  /predictive
+  - GET  /sla-alerts
+  - POST /reverse-pitch
+  - GET  /csr
+  - POST /csr/:id/forward
+  - GET  /ghost-log
+
+State dashboard APIs
+- /api/state
+  - GET  /heatmap
+  - GET  /leaderboard
+  - GET  /trends
+  - GET  /emergency-feed
+  - POST /ping-mayor/:city
+
+Notifications
+- /api/notifications
+  - GET   /
+  - PATCH /:id/read
+  - PATCH /read-all
+
+Uploads
+- /api/upload
+  - POST /image
+
+Stories / Home content
+- /api/stories
+
+Geo helpers
+- /api/geo
+
+Stats helpers
+- /api/stats
+
+
+11) DATA MODEL (HIGH-LEVEL ENTITIES)
+------------------------------------
+The platform revolves around these core entities (MongoDB collections):
+- Users: roles (citizen, mayor, state_admin), rank/xp/karma, badges, adopted spots, service hours
+- Issues: category, location, photos, upvotes, status, SLA fields, AI triage fields, broadcasts, community resolution state, ghost audit state
+- Departments: city/category performance metrics
+- Polls: geofenced local polls with voting
+- Volunteer drives: pledges + items + scheduling
+- Adopted spots: citizen/RWA adoption and upkeep
+- Karma rewards: partner perks redeemed with karma points
+- CSR projects: high-upvote items forwarded for sponsorship interest
+- Ghost audits: scheduled post-resolution verification to detect recurrence
+- Notifications: user-targeted events (broadcasts, SLA breach, rank-up, audits, etc.)
+- Story articles: homepage success stories
+
+
+12) BACKGROUND JOBS (CRON)
+--------------------------
+The backend starts cron jobs on server startup.
+Examples of scheduled work:
+- SLA breach checks and escalations/notifications
+- Ghost audit scheduling (e.g., long after resolution)
+- Monthly resets (e.g., “super vote” cooldown reset)
+- Red alert acknowledgement monitoring and escalation
+
+
+13) TESTING & QA
+----------------
+Use QA.md as the main verification checklist.
+It covers:
+- Public homepage behaviors
+- Authentication and role routing
+- Citizen flows (feed/post/detail/profile)
+- Volunteer hub, polls, karma, notifications
+- Mayor dashboard tabs and enforcement
+- State dashboard and emergency escalation
+- Cross-cutting end-to-end flows (red alert, accountability clock, community resolution, ghost audits, AI triage)
+- Backend endpoint sanity checks
+
+
+14) DEPLOYMENT NOTES
+--------------------
+Common setup (typical):
+- Frontend deployed to a static host (Vercel/Netlify/etc.)
+- Backend deployed to a Node host (Render/Fly/Railway/etc.)
+- MongoDB Atlas used for managed database
+
+Key deployment considerations:
+- Configure frontend base URL to call the deployed backend (VITE_API_URL) OR set up reverse proxy paths.
+- Configure backend CORS allowed origins via CLIENT_URL.
+- Use secure cookies for refresh tokens in production (HTTPS required).
+
+
+15) SECURITY NOTES & OPERATIONAL GUIDANCE
+-----------------------------------------
+- Keep secrets in environment variables only.
+- Rotate JWT secrets if exposed.
+- Use httpOnly cookies for refresh tokens (recommended).
+- Enforce role checks server-side (never rely on UI alone).
+- Validate uploads (type/size), and store only Cloudinary URLs/public IDs.
+- Log and monitor cron actions that affect statuses/SLA flags.
+
+
+16) KEY REFERENCE DOCS IN THIS REPO
+-----------------------------------
+- plan.md
+  - The detailed blueprint: features, schemas, routes, cron jobs, and intended behavior.
+- QA.md
+  - The full verification checklist for the UI + backend behaviors and cross-role interactions.
+
+
+END OF DOCUMENT
+

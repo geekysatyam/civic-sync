@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/((?!assets/|favicon\\.ico|logo\\.|pwa-|apple-touch|robots\\.txt|placeholder\\.).*)",
+      "destination": "/index.html"
+    }
+  ]
+}
