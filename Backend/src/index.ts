@@ -37,20 +37,30 @@ const PORT = parseInt(process.env.PORT ?? '5000', 10);
 
 const clientUrls = (process.env.CLIENT_URL || 'http://localhost:8080,http://localhost:5173')
   .split(',')
-  .map((s) => s.trim())
+  .map((s) => s.trim().replace(/\/$/, ''))
   .filter(Boolean);
+
+console.log('[cors] allowed origins:', clientUrls);
+
+function isAllowedOrigin(origin: string): boolean {
+  const clean = origin.replace(/\/$/, '');
+  // exact match
+  if (clientUrls.includes(clean)) return true;
+  // allow all vercel preview deployments for this project
+  if (clean.match(/https:\/\/civcsync.*\.vercel\.app$/)) return true;
+  if (clean.match(/https:\/\/civicsync.*\.vercel\.app$/)) return true;
+  return false;
+}
 
 app.use(
   cors({
     origin(origin, cb) {
-      if (!origin) {
-        cb(null, true);
-        return;
-      }
-      if (clientUrls.includes(origin)) {
+      if (!origin) { cb(null, true); return; }
+      if (isAllowedOrigin(origin)) {
         cb(null, origin);
         return;
       }
+      console.warn('[cors] blocked origin:', origin);
       cb(null, false);
     },
     credentials: true,
