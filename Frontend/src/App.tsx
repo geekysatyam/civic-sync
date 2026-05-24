@@ -25,6 +25,7 @@ import Polls from "./pages/Polls";
 import Karma from "./pages/Karma";
 import Notifications from "./pages/Notifications";
 import VerifyCertificate from "./pages/VerifyCertificate";
+import ResetPassword from "./pages/ResetPassword";
 import Leaderboard from "./pages/Leaderboard";
 
 import GhostAudits from "./pages/GhostAudits";
@@ -74,6 +75,7 @@ const App = () => (
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/verify" element={<Navigate to="/" replace />} />
             <Route path="/verify/:serial" element={<VerifyCertificate />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/city/:slug/stats" element={<PublicCityStats />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route

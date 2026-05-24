@@ -9,6 +9,8 @@ import {
   googleStatus,
   googleStart,
   googleCallback,
+  forgotPassword,
+  resetPassword,
 } from '../controllers/authController.js';
 import { authRequired } from '../middleware/auth.js';
 import { confirmOtp, otpStatus, requestOtp } from '../controllers/otpController.js';
@@ -22,6 +24,8 @@ r.post('/register', ac(register));
 r.post('/login', ac(login));
 r.post('/logout', logout);
 r.post('/refresh', refresh);
+r.post('/forgot-password', ac(forgotPassword));
+r.post('/reset-password', ac(resetPassword));
 r.get('/me', authRequired, ac(me));
 r.patch('/complete-profile', authRequired, ac(completeProfile));
 r.get('/otp/status', authRequired, ac(otpStatus));

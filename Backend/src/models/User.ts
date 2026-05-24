@@ -56,6 +56,8 @@ const userSchema = new mongoose.Schema(
     serviceHoursLog: [serviceHoursEntry],
     adoptedSpots: [{ type: mongoose.Schema.Types.ObjectId, ref: 'AdoptedSpot' }],
     avatarUrl: { type: String, default: '' },
+    passwordResetToken: { type: String, default: '' },
+    passwordResetExpires: { type: Date },
     karmaRedemptions: [
       {
         rewardId: { type: mongoose.Schema.Types.ObjectId, ref: 'KarmaReward' },

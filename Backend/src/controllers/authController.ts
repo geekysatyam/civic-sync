@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import type { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { User } from '../models/User.js';
@@ -10,6 +11,7 @@ import {
   refreshClearCookieOptions,
   refreshCookieOptions,
 } from '../config/authCookies.js';
+import { sendEmail } from '../services/emailService.js';
 import {
   fetchGoogleProfile,
   generateOAuthState,
@@ -263,4 +265,47 @@ export async function googleCallback(req: Request, res: Response) {
   } catch {
     redirectError('google_failed');
   }
+}
+
+export async function forgotPassword(req: Request, res: Response) {
+  const { email } = req.body as { email?: string };
+  if (!email?.trim()) { res.status(400).json({ error: 'Email required' }); return; }
+  const user = await User.findOne({ email: email.toLowerCase().trim() });
+  // Always respond OK — prevents email enumeration
+  if (!user || user.authProvider === 'google') { res.json({ ok: true }); return; }
+  const token = crypto.randomBytes(32).toString('hex');
+  user.passwordResetToken = token;
+  user.passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000);
+  await user.save();
+  const resetLink = `${primaryClientUrl()}/reset-password?token=${token}`;
+  await sendEmail(
+    user.email,
+    'Reset your CivicSync password',
+    `<div style="font-family:sans-serif;max-width:480px;margin:auto">
+      <h2 style="color:#1a365d">Reset your password</h2>
+      <p>Hi ${user.name},</p>
+      <p>Click the button below to reset your CivicSync password. This link expires in <strong>1 hour</strong>.</p>
+      <a href="${resetLink}" style="display:inline-block;margin:16px 0;padding:12px 24px;background:#7c3aed;color:#fff;border-radius:8px;text-decoration:none;font-weight:600">Reset Password</a>
+      <p style="color:#64748b;font-size:13px">If you didn't request this, ignore this email.</p>
+    </div>`
+  );
+  res.json({ ok: true });
+}
+
+export async function resetPassword(req: Request, res: Response) {
+  const { token, password } = req.body as { token?: string; password?: string };
+  if (!token || !password || password.length < 8) {
+    res.status(400).json({ error: 'Valid token and password (min 8 chars) required' });
+    return;
+  }
+  const user = await User.findOne({
+    passwordResetToken: token,
+    passwordResetExpires: { $gt: new Date() },
+  });
+  if (!user) { res.status(400).json({ error: 'Reset link is invalid or has expired' }); return; }
+  user.passwordHash = await bcrypt.hash(password, 10);
+  user.passwordResetToken = '';
+  user.passwordResetExpires = undefined;
+  await user.save();
+  res.json({ ok: true });
 }

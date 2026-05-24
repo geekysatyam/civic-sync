@@ -1,6 +1,6 @@
 # CivicSync — Implementation Roadmap & Progress Tracker
 
-**Last updated:** 2026-05-23 (sprint 9 — public city stats, anomaly alerts, native share, citizen issue export, final polish)  
+**Last updated:** 2026-05-25 (sprint 10 — production deployment, Railway + Vercel, build fixes, CORS hardening)  
 **Source spec:** [`missing`](missing) (full product plan)  
 **How to use:** Update status emojis as work completes. Prefer marking **Partial** when backend exists but UI or polish is incomplete.
 
@@ -420,12 +420,23 @@ Use labels: `phase-0` … `phase-7`, `status:done|partial|todo`.
 - [x] Backend — `anomalies` wired to `mayorRoutes.ts`
 - [x] `App.tsx` — public `/city/:slug/stats` route added outside `ProtectedRoute`
 
-### Recently completed
+### Sprint 10 — Production deployment (completed)
 
-- [x] Sprint 2: design tokens, PostIssue validation, OTP mock, cert titles
-- [x] Reporter phone-verified badge on feed + issue detail
-- [x] Scorecard API `{ summary, departments }` with 30d trends
-- [x] Certificate PDF mayor signature line
+- [x] Railway backend deployment — Node 20, nixpacks.toml, .node-version
+- [x] Fix `tsc: not found` — moved typescript + tsx to dependencies
+- [x] Fix `EBUSY` lock — removed double npm ci from buildCommand
+- [x] Fix TypeScript error — `req.params.slug` cast in statsController.ts
+- [x] Fix truncated PDF — buffer collection before res.end() in certificateService.ts
+- [x] Fix certificate issuedAt reset — preserve original date on updates
+- [x] Fix certificate banner overlap — two-row layout, banner height 110px
+- [x] Fix API timeout — raised from 8s to 30s in api.ts
+- [x] Fix PWA SW cache — removed same-origin check breaking cross-origin API
+- [x] Fix gitignore — Backend/.env + dist/ + node_modules/ in root gitignore
+- [x] CORS hardening — strip trailing slashes, log blocked origins, allow Vercel previews
+- [x] Vercel frontend deployment — VITE_API_URL set, SPA rewrite rule updated
+- [x] Hero widget — replaced placeholder map div with Unsplash street image
+- [x] Production env template — Backend/.env.production.example
+- [x] Full PROJECT_DOCUMENTATION.txt rewrite with production details
 
 ---
 

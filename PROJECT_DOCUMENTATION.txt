@@ -1,410 +1,725 @@
-CIVICSYNC — PROJECT DOCUMENTATION (What / Why / How)
-====================================================
+CIVICSYNC — PROJECT DOCUMENTATION
+====================================
+Last updated: 2026-05-25
+Version: Production (Sprint 9 + deployment hardening)
 
-Project name
-------------
-CivicSync
-
-One-line summary
-----------------
-CivicSync is a civic-tech platform that lets citizens report local issues, lets municipal leadership track/acknowledge/fix them with accountability (SLA timers + broadcasts), and lets state admins monitor cross-city trends and emergencies — with gamification, community-led resolutions, maps/heatmaps, and automated “AI-like” triage (deterministic server-side logic).
-
-
-Table of contents
+TABLE OF CONTENTS
 -----------------
-1) What the project is
-2) Why the project exists (problem + goals)
-3) Who uses it (roles)
-4) What it can do (features)
-5) How it works (architecture)
-6) Tech stack
-7) Folder structure
-8) Environment variables & configuration
-9) How to run locally (step-by-step)
-10) API overview (high-level routes)
-11) Data model (high-level entities)
-12) Background jobs (cron)
-13) Testing & QA
-14) Deployment notes (local + typical hosting)
-15) Security notes & operational guidance
-16) Key reference docs in this repo
+1)  What the project is
+2)  Why the project exists
+3)  Roles
+4)  Features
+5)  Architecture
+6)  Tech stack
+7)  Folder structure
+8)  Environment variables
+9)  Running locally
+10) Production deployment (live URLs + steps)
+11) API overview
+12) Data models
+13) Background jobs
+14) Certificate generation
+15) Security notes
+16) Known issues & DNS note
+17) Roadmap status summary
+18) Reference docs
 
 
 1) WHAT THE PROJECT IS
 ----------------------
-CivicSync is a full-stack web application with:
-- A citizen-facing experience (feed, issue posting, issue detail, profile, karma perks, volunteer hub, polls, notifications)
-- A mayor/municipality dashboard (task management, city heatmap, department scorecard, predictive maintenance, SLA alerts, CSR/ghost audit panels)
-- A state admin dashboard (state heatmap, city leaderboard, trend analysis, emergency feed with escalation)
+CivicSync is a full-stack civic-tech web application that lets citizens
+report local infrastructure issues, lets municipal leadership track and
+resolve them with SLA accountability, and lets state admins monitor
+cross-city trends and emergencies — with gamification, AI triage,
+community-led resolutions, maps/heatmaps, and verifiable PDF certificates.
 
 
-2) WHY THE PROJECT EXISTS (PROBLEM + GOALS)
--------------------------------------------
+2) WHY THE PROJECT EXISTS
+--------------------------
 Common civic reporting failures:
-- Complaints disappear into “black boxes” with no public tracking.
-- No accountability clocks (SLA) for acknowledgement/resolution.
-- No structured way for citizens to collaborate (volunteering, adopting spots).
-- Hard to see hotspots/trends across neighborhoods/cities.
+- Complaints disappear with no public tracking or accountability.
+- No SLA timers — departments face no deadline pressure.
+- No structured citizen collaboration (volunteering, spot adoption).
+- Hard to see hotspots/trends across neighborhoods and cities.
 
-Goals of CivicSync:
+CivicSync goals:
 - Make reporting easy, structured, and location-aware.
-- Make accountability visible (status + timer + SLA breach alerts).
+- Make accountability visible (status + SLA timer + breach alerts).
 - Encourage community participation (drives, adopt-a-spot, karma rewards).
-- Support governance operations with dashboards and alerts.
-- Add automated triage to improve signal-to-noise (summary, duplicate detection, abuse filtering, translation labeling, cost/resource estimation).
+- Support governance with dashboards, heatmaps, and escalation tools.
+- Add AI triage (Gemini) to improve signal-to-noise.
 
 
-3) WHO USES IT (ROLES)
-----------------------
+3) ROLES
+--------
 Citizen
-- Reports issues, upvotes issues, participates in volunteer drives and polls.
-- Can propose community resolution (with verification flow).
-- Sees personal stats, karma points and rewards (leaderboards are restricted to mayors/state admins).
+  Reports issues, upvotes, participates in volunteer drives and polls,
+  proposes community resolutions, earns karma/badges/rank, downloads
+  verifiable PDF certificates.
 
 Contractor
-- Views issues categorized under their specialty (e.g. roads, water).
-- Tracks status and updates regarding their assigned tasks.
+  Views issues under their trade category, updates work status,
+  uploads before/after photos.
+
+Department Head
+  Manages issues for their department, updates status, broadcasts
+  updates to upvoters, views department stats.
 
 Mayor (Municipal dashboard)
-- Manages issues within their city: acknowledge, assign/update status, upload “after fix” photos, broadcast updates.
-- Tracks department performance, predictive maintenance alerts, SLA breaches.
-- Oversees CSR forwarding and ghost audit logs.
-- Views city-level user leaderboard to see top contributors in their city.
+  Acknowledges/assigns/resolves issues, uploads after-fix photos,
+  broadcasts updates, manages contractors and dept heads, views
+  city heatmap, SLA alerts, scorecard, predictive maintenance,
+  CSR forwarding, ghost audit logs, city leaderboard.
 
 State Admin
-- Monitors multiple cities at once: statewide heatmap, city leaderboard, trend insights.
-- Sees emergency/red-alert feed across cities; can “ping” mayors to escalate.
-- Can view contractor status page across the state.
-- Can moderate and approve story articles.
+  Monitors all cities: statewide heatmap, city leaderboard, trend
+  insights, emergency/red-alert feed, can ping mayors to escalate,
+  moderates story articles, views contractor status across state.
+
+Admin (Platform)
+  User management, content moderation, platform-wide oversight.
 
 
-4) WHAT IT CAN DO (FEATURES)
-----------------------------
+4) FEATURES
+-----------
 Core issue reporting & tracking
-- Create an issue with category, description, suggested solution, and location (map).
-- Upload photos (before/after).
-- Status lifecycle (pending → acknowledged → in_progress → resolved, etc.).
-- Accountability clock and SLA tracking (including breach flags/alerts).
+  - Create issue with category, description, suggested solution, location.
+  - Upload photos (before/after via Cloudinary).
+  - Status lifecycle: pending → acknowledged → in_progress → resolved.
+  - Accountability clock and SLA tracking with breach flags/alerts.
+  - Red alert escalation for critical issues.
 
-Automated triage (“AI simulation”, deterministic)
-- Summary generation from category + keywords.
-- Cost/resource estimation using lookup tables.
-- Duplicate detection by proximity + category (bundle duplicates).
-- Abuse keyword filtering and “Under Review” gating.
-- Translation label detection (e.g., Gurmukhi/Devanagari script detection).
+AI triage (Gemini 1.5 Flash + rule-based fallback)
+  - 2-sentence LLM summary on issue creation.
+  - Severity scoring (1–5).
+  - Abuse/spam detection.
+  - Translation detection + mayor-view translate button.
+  - Priority score: severity×20 + upvotes×2 + SLA breach + red alert.
+  - Recomputed every 6h via cron.
 
-Citizen engagement & community mechanisms
-- Upvotes and broadcasts.
-- Community resolution: citizen uploads fix photo; verifier approves/rejects.
-- Volunteer drives (“Sweat & Tools” pledges, scheduling).
-- Adopt-a-spot commitments.
-- Karma rewards/perks redemption.
-- Local polls (“Nukkad” polls) with geofencing/radius.
+Citizen engagement
+  - Upvotes and broadcasts.
+  - Community resolution: citizen uploads fix photo, verifier approves.
+  - Volunteer drives with pledges and scheduling.
+  - Adopt-a-spot commitments.
+  - Karma rewards/perks redemption.
+  - Local polls (Nukkad) with geofencing.
+  - Specialty badges (16 types) with unlock hints.
+  - Rank progression: Civic Scout → Block Captain → Neighborhood Advocate
+    → City Guardian → District Champion → State Legend.
+
+Certificates
+  - PDF certificate generated on demand via pdfkit.
+  - QR code links to public /verify/:serial page.
+  - Achievement title based on rank/hours/solutions.
+  - Featured civic report section, mayor signature, seal.
+  - Verifiable via public URL — no login required.
 
 Maps & analytics
-- Citizen map views for issue context.
-- Mayor city heatmap (issue density).
-- State heatmap (cross-city hotspots).
+  - Citizen map views (Leaflet).
+  - Mayor city heatmap (issue density by neighborhood).
+  - State heatmap (cross-city hotspots).
+  - Public city stats page /city/:slug/stats (no auth).
+  - Resolution rate trend chart (6-month LineChart).
+  - Anomaly spike detection (2× 7-day average).
+
+Governance tools
+  - Department scorecard with SLA compliance.
+  - Predictive maintenance alerts.
+  - Ghost audit scheduling (6 months post-resolution).
+  - Immutable audit log (AuditLog collection).
+  - Citizen issue history export (JSON).
+  - Native Web Share on issue detail.
 
 Notifications
-- In-app notification feed (and email notifications for key events).
+  - In-app notification feed.
+  - Email notifications via Resend (SLA breach, broadcasts, rank-up).
 
 
-5) HOW IT WORKS (ARCHITECTURE)
-------------------------------
-High-level
-- Frontend: React + TypeScript (Vite) SPA.
-- Backend: Node.js + Express (TypeScript) REST API.
-- Database: MongoDB (Mongoose).
+5) ARCHITECTURE
+---------------
+Frontend  →  React + TypeScript SPA (Vite) on Vercel
+Backend   →  Node.js + Express (TypeScript, ESM) on Railway
+Database  →  MongoDB Atlas (cloud)
+Storage   →  Cloudinary (images)
+Email     →  Resend
+AI        →  Google Gemini 1.5 Flash
 
-Request flow (typical)
-1) User uses the frontend (browser).
-2) Frontend calls backend endpoints under /api (via Axios).
-3) Backend authenticates (JWT access token + refresh flow), applies role guards, performs DB operations, runs triage services, and returns JSON responses.
+Request flow:
+  Browser → Vercel CDN → React SPA
+  React SPA → Axios (VITE_API_URL) → Railway Express API
+  Express → MongoDB Atlas / Cloudinary / Resend / Gemini
 
-Dev convenience: Vite proxy
-- In development, the frontend dev server proxies /api to the backend to avoid CORS complexity.
+Auth flow:
+  Login → JWT access token (15m) returned in response body
+        + refresh token in httpOnly cookie (7d)
+  Axios interceptor attaches Bearer token to every request.
+  On 401 → auto-refresh via /api/auth/refresh → retry original request.
+
+Dev convenience:
+  Vite dev server on :8080 proxies /api → http://127.0.0.1:5000
+  so no CORS issues in local development.
 
 
 6) TECH STACK
 -------------
 Frontend
-- React 18 + TypeScript
-- Vite dev server
-- React Router
-- React Query (TanStack)
-- TailwindCSS + shadcn/ui (Radix components)
-- Leaflet + react-leaflet (maps)
-- Recharts (charts)
-- Axios (API calls)
-- Vitest (unit tests), Playwright (e2e tests dependency present)
+  React 18 + TypeScript
+  Vite 5 (build tool + dev server)
+  React Router v6
+  TanStack React Query v5
+  TailwindCSS v3 + shadcn/ui (Radix primitives)
+  Leaflet + react-leaflet (maps)
+  Recharts (charts)
+  Axios (API calls, interceptors, token refresh)
+  Vite PWA plugin (service worker, offline support)
+  Vitest (unit tests), Playwright (e2e, configured)
 
 Backend
-- Node.js + Express (TypeScript, ESM modules)
-- MongoDB + Mongoose
-- Auth: JWT access token + refresh token via httpOnly cookie
-- Uploads: Multer + Cloudinary
-- Email: Resend
-- Cron jobs: node-cron
-- PDF generation: pdfkit
-- QR code generation: qrcode
+  Node.js ≥ 20.19.0 + Express 4 (TypeScript, ESM modules)
+  MongoDB 7 + Mongoose 8
+  JWT (jsonwebtoken) — access + refresh tokens
+  bcryptjs — password hashing
+  Multer — multipart upload handling
+  Cloudinary SDK v2 — image storage
+  Resend SDK — transactional email
+  node-cron — background scheduled jobs
+  pdfkit — PDF certificate generation
+  qrcode — QR code generation
+  @google/generative-ai — Gemini AI triage
+  google-auth-library — Google OAuth
 
 
 7) FOLDER STRUCTURE
 -------------------
-Repository root
-- frontend/   → React application
-- backend/    → Express API server
-- plan.md     → detailed implementation requirements/plan
-- QA.md       → QA checklist to verify flows end-to-end
-- .vercel/    → deployment-related metadata (if used)
+Civic-Sync/
+├── Backend/
+│   ├── src/
+│   │   ├── config/         authCookies.ts, db.ts
+│   │   ├── controllers/    one file per domain
+│   │   ├── jobs/           cron.ts (all scheduled jobs)
+│   │   ├── middleware/     auth.ts, roleGuard.ts, upload.ts, errorHandler.ts
+│   │   ├── models/         Mongoose schemas
+│   │   ├── routes/         Express routers mounted under /api/*
+│   │   ├── seed/           bulk seed scripts + image uploader
+│   │   ├── services/       aiService, certificateService, emailService,
+│   │   │                   cloudinaryService, geocodingService,
+│   │   │                   googleAuthService, karmaService, otpService
+│   │   ├── types/          express.d.ts (req.userId, req.userRole)
+│   │   ├── utils/          asyncHandler, jwt, leaderboard, serializeUser
+│   │   └── index.ts        app entry point
+│   ├── .env                local secrets (never commit)
+│   ├── .env.production.example  production env template
+│   ├── .gitignore
+│   ├── .node-version       20  (forces Node 20 on Railway/Nixpacks)
+│   ├── nixpacks.toml       Railway build config (nodejs_20, npm ci --include=dev)
+│   ├── railway.json        Railway deploy config (build + start + healthcheck)
+│   ├── package.json        typescript + tsx in dependencies (not devDeps)
+│   ├── tsconfig.json
+│   └── vercel.json         (present but Railway is preferred for backend)
+│
+├── Frontend/
+│   ├── public/             static assets, PWA icons, badges
+│   ├── src/
+│   │   ├── components/     auth/, dashboard/, gov/, home/, layouts/,
+│   │   │                   leaderboard/, shared/, ui/ (shadcn)
+│   │   ├── contexts/       AuthContext.tsx
+│   │   ├── data/           static/seed data
+│   │   ├── hooks/          use-toast, custom hooks
+│   │   ├── lib/            api.ts, authRouting, civicLabels, utils
+│   │   ├── pages/          one file per route
+│   │   ├── services/       frontend service helpers
+│   │   ├── types/          index.ts (User, Issue, Role, etc.)
+│   │   └── App.tsx         all routes defined here
+│   ├── .env.local          VITE_API_URL (not committed)
+│   ├── vercel.json         SPA rewrite rule
+│   ├── vite.config.ts      proxy, PWA, aliases
+│   └── package.json
+│
+├── .gitignore              covers Backend/.env, dist/, node_modules/
+├── PROJECT_DOCUMENTATION.txt  ← this file
+├── ROADMAP.md              sprint-by-sprint progress tracker
+├── plan.md                 original backend implementation spec
+├── QA.md                   end-to-end verification checklist
+├── SEED_CREDENTIALS.md     demo login credentials
+├── PORTS_AND_OAUTH.md      port config + OAuth setup
+└── GOOGLE_OAUTH_SETUP.md   Google Console step-by-step
+
+
+8) ENVIRONMENT VARIABLES
+-------------------------
+
+Backend (Backend/.env for local, Railway Variables for production)
+------------------------------------------------------------------
+NODE_ENV=production                     # must be set in prod
+PORT                                    # DO NOT set — Railway injects it
+MONGODB_URI=mongodb+srv://...           # MongoDB Atlas connection string
+JWT_SECRET=<64-byte hex>                # generate: node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+JWT_REFRESH_SECRET=<64-byte hex>        # separate secret from JWT_SECRET
+CLIENT_URL=https://civcsync.vercel.app  # comma-separated allowed CORS origins
+CLOUDINARY_CLOUD_NAME=...
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
+RESEND_API_KEY=...
+RESEND_FROM_EMAIL=noreply@yourdomain.com
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GOOGLE_CALLBACK_URL=https://civic-sync-production.up.railway.app/api/auth/google/callback
+GEMINI_API_KEY=...
+REQUIRE_PHONE_VERIFY=true
+
+# Dev-only flags (DO NOT set in production)
+# MOCK_OTP=true          — bypasses real OTP, logs code to console
+# COOKIE_SECURE=false    — only for local HTTP dev
+
+Frontend (Vercel Environment Variables)
+----------------------------------------
+VITE_API_URL=https://civic-sync-production.up.railway.app
+
+# In local dev (.env.local) — leave empty, Vite proxy handles /api
+# VITE_API_URL=          (empty = use Vite proxy)
+
+
+9) RUNNING LOCALLY
+------------------
+Prerequisites
+  Node.js ≥ 20.19.0
+  MongoDB Atlas account (or local MongoDB)
 
 Backend
-backend/src/index.ts
-- Express app entrypoint, routes registration, DB connect, cron start
-
-backend/src/routes/
-- Route modules mounted under /api/*
+  cd Backend
+  npm install
+  # create Backend/.env with variables from section 8
+  npm run dev
+  # → http://localhost:5000/api/health should return {"ok":true}
 
 Frontend
-frontend/vite.config.ts
-- Vite dev server configuration (port, proxy)
+  cd Frontend
+  npm install
+  # .env.local can be empty for local dev (Vite proxy handles /api)
+  npm run dev
+  # → http://localhost:8080
 
-frontend/src/lib/api.ts
-- Axios instance, auth header injection, refresh-token retry logic
+Seed demo data
+  cd Backend
+  npm run seed          # full seed (9 cities, all roles, issues, etc.)
+  npm run seed:admin    # admin user only
+  npm run seed:user     # citizen user only
+  # See SEED_CREDENTIALS.md for login details
 
-
-8) ENVIRONMENT VARIABLES & CONFIGURATION
-----------------------------------------
-IMPORTANT SECURITY NOTE
-- Do NOT commit secrets (DB URI, JWT secrets, Cloudinary keys, Resend keys).
-- If any real secrets exist in your local files, rotate them immediately in the provider dashboards.
-
-Backend environment (backend/.env)
-- PORT=5000
-- MONGODB_URI=... (MongoDB Atlas or local MongoDB connection string)
-- JWT_SECRET=...
-- JWT_REFRESH_SECRET=...
-- CLOUDINARY_CLOUD_NAME=...
-- CLOUDINARY_API_KEY=...
-- CLOUDINARY_API_SECRET=...
-- RESEND_API_KEY=...
-- RESEND_FROM_EMAIL=... (sender identity configured in Resend)
-- CLIENT_URL=http://localhost:8080,http://localhost:5173   (comma-separated allowed origins)
-
-Frontend environment (frontend/.env.local or frontend/.env)
-- Usually not needed in dev (proxy handles /api).
-- Optional:
-  - VITE_API_URL=http://localhost:5000   (only if you are NOT using the Vite proxy)
+Build backend (TypeScript compile)
+  cd Backend
+  npm run build         # outputs to dist/
+  npm run start         # runs dist/index.js
 
 
-9) HOW TO RUN LOCALLY (STEP-BY-STEP)
-------------------------------------
-Prereqs
-- Node.js (LTS recommended)
-- MongoDB (Atlas connection OR local MongoDB running)
+10) PRODUCTION DEPLOYMENT (LIVE)
+---------------------------------
 
-Backend (API)
-1) Open a terminal in: backend/
-2) Install deps:
-   - npm install
-3) Create backend/.env using the keys described above.
-4) Run dev server:
-   - npm run dev
-5) Health check:
-   - GET http://localhost:5000/api/health  → { "ok": true }
+LIVE URLS
+  Frontend:  https://civcsync.vercel.app
+  Backend:   https://civic-sync-production.up.railway.app
+  Health:    https://civic-sync-production.up.railway.app/api/health
 
-Optional: Seed data
-- backend includes seed scripts in package.json:
-  - npm run seed
-  - npm run seed:admin
-  - npm run seed:user
+BACKEND — Railway
+  Platform:     Railway (https://railway.app)
+  Builder:      Nixpacks v1.41.0
+  Node version: 20 (forced via .node-version + nixpacks.toml)
+  Root dir:     Backend
+  Build:        npm run build  (tsc → dist/)
+  Start:        npm run start  (node dist/index.js)
+  Healthcheck:  /api/health
 
-Frontend (Web)
-1) Open a terminal in: frontend/
-2) Install deps:
-   - npm install
-3) Run dev server:
-   - npm run dev
-4) Open:
-   - http://localhost:8080
+  Key Railway config files:
+    Backend/railway.json      — build + start + healthcheck config
+    Backend/nixpacks.toml     — nodejs_20 + npm ci --include=dev
+    Backend/.node-version     — 20
 
-How frontend talks to backend in dev
-- The Vite dev server listens on :8080 and proxies /api to http://127.0.0.1:5000
-- So the frontend calls /api/... and Vite forwards to the backend.
+  Railway Variables (set in Railway dashboard → Variables):
+    NODE_ENV, MONGODB_URI, JWT_SECRET, JWT_REFRESH_SECRET,
+    CLIENT_URL, CLOUDINARY_*, RESEND_*, GOOGLE_*, GEMINI_API_KEY,
+    REQUIRE_PHONE_VERIFY
+    (do NOT add PORT — Railway injects it automatically)
+
+FRONTEND — Vercel
+  Platform:     Vercel (https://vercel.com)
+  Framework:    Vite (auto-detected)
+  Root dir:     Frontend
+  Build cmd:    vite build
+  Output dir:   dist
+  SPA rewrite:  Frontend/vercel.json (all routes → /index.html)
+
+  Vercel Environment Variables:
+    VITE_API_URL = https://civic-sync-production.up.railway.app
+    (set for Production + Preview + Development environments)
+
+DATABASE — MongoDB Atlas
+  Provider:  MongoDB Atlas (cloud.mongodb.com)
+  Network:   Allow access from anywhere (0.0.0.0/0) — Railway IPs are dynamic
+  DB name:   civicsync
+
+DEPLOYING UPDATES
+  Backend:  push to GitHub → Railway auto-deploys from main branch
+  Frontend: push to GitHub → Vercel auto-deploys from main branch
+
+GOOGLE OAUTH (production)
+  In Google Cloud Console → APIs → Credentials → OAuth client:
+  Authorized JavaScript origins:
+    https://civcsync.vercel.app
+  Authorized redirect URIs:
+    https://civic-sync-production.up.railway.app/api/auth/google/callback
 
 
-10) API OVERVIEW (HIGH-LEVEL ROUTES)
-------------------------------------
-Base URL (dev)
-- Backend: http://localhost:5000
-- Frontend (dev): http://localhost:8080
+11) API OVERVIEW
+----------------
+Base URLs
+  Local:       http://localhost:5000
+  Production:  https://civic-sync-production.up.railway.app
 
 Health
-- GET /api/health
+  GET  /api/health                    → {"ok":true}
 
-Auth
-- /api/auth
-  - POST /register
-  - POST /login
-  - POST /logout
-  - POST /refresh
-  - GET  /me
+Auth  /api/auth
+  POST /register                      create citizen account
+  POST /login                         returns accessToken + sets refresh cookie
+  POST /logout                        clears refresh cookie
+  POST /refresh                       issues new access token from cookie
+  GET  /me                            current user (auth required)
+  PATCH /complete-profile             complete Google OAuth profile
+  GET  /google/status                 OAuth config status
+  GET  /google                        start Google OAuth flow
+  GET  /google/callback               OAuth callback
+  GET  /otp/status                    phone OTP status
+  POST /otp/send                      send OTP to phone
+  POST /otp/verify                    verify OTP code
 
-Issues
-- /api/issues
-  - GET    /
-  - POST   /
-  - GET    /:id
-  - PATCH  /:id/upvote
-  - PATCH  /:id/acknowledge
-  - PATCH  /:id/status
-  - POST   /:id/photo
-  - POST   /:id/broadcast
-  - POST   /:id/community-resolve
-  - PATCH  /:id/verify-resolve
-  - POST   /:id/flag-fake
-  - POST   /:id/ghost-response
+Issues  /api/issues
+  GET    /                            paginated feed (city/category/status filters)
+  POST   /                            create issue (triggers AI triage)
+  GET    /:id                         full issue detail
+  PATCH  /:id/upvote                  toggle upvote
+  PATCH  /:id/acknowledge             Mayor only
+  PATCH  /:id/status                  Mayor/DeptHead
+  POST   /:id/photo                   Mayor — upload after-fix photo
+  POST   /:id/broadcast               Mayor — notify upvoters
+  POST   /:id/community-resolve       Citizen — submit fix photo
+  PATCH  /:id/verify-resolve          Advocate/Guardian — approve/reject
+  POST   /:id/flag-fake               Advocate/Guardian
+  POST   /:id/ghost-response          City Guardian — audit response
 
-Users / Profile / Certificates
-- /api/users
-  - GET   /profile
-  - PATCH /profile
-  - GET   /leaderboard
-  - GET   /:id/certificates
+Users  /api/users
+  GET    /profile                     own profile
+  PATCH  /profile                     update name/neighborhood/avatar
+  GET    /leaderboard                 top citizens by city
+  GET    /:id/certificates            generate + download PDF certificate
+  GET    /me/issues/export            export own issues as JSON
 
-Polls
-- /api/polls
-  - GET  /
-  - POST /
-  - POST /:id/vote
-  - GET  /archived
+Certificates  /api/certificates
+  GET    /verify/:serial              public certificate verification (no auth)
 
-Volunteer hub
-- /api/volunteer
-  - GET  /drives
-  - POST /drives
-  - POST /drives/:id/pledge
-  - POST /qr/generate
-  - POST /qr/scan
-  - GET  /spots
-  - POST /spots/:id/adopt
+Stats  /api/stats
+  GET    /summary                     public homepage metrics
+  GET    /city/:slug                  public city stats (no auth)
 
-Karma / rewards
-- /api/karma
-  - GET  /rewards
-  - POST /redeem/:id
+Mayor  /api/mayor
+  GET    /tasks                       city issues with priority sort
+  GET    /heatmap                     neighborhood density
+  GET    /scorecard                   department performance
+  GET    /predictive                  maintenance alerts
+  GET    /sla-alerts                  breached SLA issues
+  GET    /trend                       6-month resolution trend
+  GET    /anomalies                   spike detection alerts
+  POST   /reverse-pitch               create ward poll
+  GET    /csr                         CSR projects
+  POST   /csr/:id/forward             forward to business
+  GET    /ghost-log                   ghost audit log
+  GET    /dept-heads                  list dept heads
+  POST   /dept-heads                  create dept head account
+  GET    /issues/:id/audit            immutable audit timeline
+  POST   /issues/:id/translate        AI translate issue text
+  POST   /issues/:id/rate-contractor  rate contractor (1–5 stars)
 
-Mayor dashboard APIs
-- /api/mayor
-  - GET  /tasks
-  - GET  /heatmap
-  - GET  /scorecard
-  - GET  /predictive
-  - GET  /sla-alerts
-  - POST /reverse-pitch
-  - GET  /csr
-  - POST /csr/:id/forward
-  - GET  /ghost-log
+State  /api/state
+  GET    /heatmap                     statewide issue density
+  GET    /leaderboard                 city comparison
+  GET    /trends                      AI macro insights
+  GET    /emergency-feed              all active red alerts
+  POST   /ping-mayor/:city            escalate to mayor
 
-State dashboard APIs
-- /api/state
-  - GET  /heatmap
-  - GET  /leaderboard
-  - GET  /trends
-  - GET  /emergency-feed
-  - POST /ping-mayor/:city
+Notifications  /api/notifications
+  GET    /                            all notifications for user
+  PATCH  /:id/read                    mark one read
+  PATCH  /read-all                    mark all read
 
-Notifications
-- /api/notifications
-  - GET   /
-  - PATCH /:id/read
-  - PATCH /read-all
+Polls  /api/polls
+  GET    /                            active polls by location
+  POST   /                            create poll
+  POST   /:id/vote                    cast vote
+  GET    /archived                    expired polls
+
+Volunteer  /api/volunteer
+  GET    /drives                      active drives by city
+  POST   /drives                      create drive
+  POST   /drives/:id/pledge           pledge time/item
+  POST   /qr/generate                 generate QR code
+  POST   /qr/scan                     log service hours
+  GET    /spots                       adoptable spots
+  POST   /spots/:id/adopt             adopt a spot
+
+Karma  /api/karma
+  GET    /rewards                     active rewards by city
+  POST   /redeem/:id                  redeem reward
+
+Upload  /api/upload
+  POST   /image                       upload image → Cloudinary URL
+
+Contractor  /api/contractor
+  GET    /issues                      issues for contractor's category
+  PATCH  /issues/:id/status           update work status
+  POST   /issues/:id/photo            upload work photo
+  GET    /stats                       contractor performance stats
+
+Dept Head  /api/dept-head
+  GET    /issues                      department issues
+  PATCH  /issues/:id/status           update status
+  POST   /issues/:id/broadcast        notify upvoters
+  GET    /stats                       department stats
+
+Admin  /api/admin
+  GET    /users                       all users
+  PATCH  /users/:id/role              change user role
+  GET    /moderation                  flagged content
+  POST   /moderation/:id/approve      approve content
+  POST   /moderation/:id/reject       reject content
+
+Geo  /api/geo
+  GET    /reverse                     reverse geocode coords → city/neighborhood
+
+Stories  /api/stories
+  GET    /                            published story articles
+  POST   /                            create article (author role)
+  PATCH  /:id/publish                 publish (state admin)
+  PATCH  /:id/reject                  reject (state admin)
+
+Ghost Audits  /api/ghost-audits
+  GET    /mine                        audits assigned to current user
+  POST   /:id/respond                 submit audit response
+
+
+12) DATA MODELS
+---------------
+User
+  name, email, passwordHash, googleId, authProvider
+  role: citizen|mayor|state_admin|admin|contractor|department_head
+  city, neighborhood, phone, phoneVerified, verificationMethod
+  rank: civic_scout|block_captain|neighborhood_advocate|
+        city_guardian|district_champion|state_legend
+  xp, karmaPoints, specialtyBadges[], superVoteUsedAt
+  isTrustedReporter, volunteerHours, solutionsImplemented, issuesPosted
+  serviceHoursLog[], adoptedSpots[], avatarUrl, karmaRedemptions[]
+  departmentId (dept head), contractorCategory, contractorLabel
+  contractorAverageRating, contractorTotalRatings
+
+Issue
+  title, description, suggestedSolution, category, city, neighborhood
+  coordinates: {lat, lng}, photos: [{url, type, uploadedBy}]
+  reportedBy (ref User), upvotes: [userId]
+  status: pending|under_review|acknowledged|in_progress|
+          community_resolved|resolved|recurred
+  isRedAlert, redAlertAcknowledgedAt, redAlertUnacknowledgedFlag
+  aiSummary, aiSeverity, priorityScore, aiCostEstimate
+  isTranslated, originalLanguage, isAbuseFlagged, abuseReviewStatus
+  isDuplicate, duplicateOf (ref Issue)
+  acknowledgedAt, resolvedAt, department (ref Department)
+  slaDeadline, slaBreached, broadcasts[]
+  communityResolution: {photo, submittedBy, status, verifiedBy}
+  ghostAudit: {scheduledAt, assignedTo, response, respondedAt}
+  assignedContractor (ref User), contractorRating
+
+Certificate
+  serial (unique, CS-YYYY-XXXXXXXX), userId (ref User)
+  holderName, city, rank, volunteerHours, solutionsImplemented, issuedAt
+
+Department
+  name, city, category, avgResolutionDays, slaCompliance
+  openIssues, resolvedIssues, headUserId (ref User)
+
+Poll
+  question, options: [{text, votes:[userId]}]
+  createdBy, city, neighborhood, coordinates, radiusMeters
+  expiresAt, isActive
+
+VolunteerDrive
+  issueId, title, city, scheduledDate
+  items: [{name, quantityNeeded, pledges:[userId]}]
+  volunteers: [{userId, pledgedAt}], status, isProBono
+
+AdoptedSpot
+  name, coordinates, city, neighborhood
+  adoptedBy, committedSince, lastCleanedAt
+
+KarmaReward
+  title, businessName, city, discountPercent, karmaCost, isActive
+
+GhostAudit
+  issueId, scheduledAt, assignedTo, status: pending|passed|recurred
+
+AuditLog (append-only)
+  issueId, action, performedBy, role, details, createdAt
+
+Notification
+  userId, type, title, message, isRead, metadata
+
+StoryArticle / Article
+  headline, city, coverImageUrl, content, status, authorId
+
+
+13) BACKGROUND JOBS (CRON)
+--------------------------
+All jobs start on server boot via startCronJobs() in src/jobs/cron.ts.
+All jobs are wrapped in safe() — errors are logged, never crash the server.
+
+Every hour (0 * * * *)
+  SLA breach check: find acknowledged issues past slaDeadline,
+  set slaBreached=true, email mayor, create sla_breach notification.
+
+Every day at midnight (0 0 * * *)
+  Ghost audit scheduling: find issues resolved 6+ months ago,
+  assign to nearest City Guardian, create audit_ping notification.
+
+Every month on 1st (0 0 1 * *)
+  Reset Block Captain superVoteUsedAt,
+  create super_vote_reset notification for all Block Captains.
+
+Every 2 hours (0 */2 * * *)
+  Red alert monitoring: find unacknowledged red alerts 2h+ old,
+  set redAlertUnacknowledgedFlag=true,
+  create escalation notification for all state admins.
+
+Every 6 hours (0 */6 * * *)
+  Priority score recompute: bulkWrite priorityScore for all open issues
+  (severity×20 + upvotes×2 + slaBreached×30 + isRedAlert×50).
+
+
+14) CERTIFICATE GENERATION
+---------------------------
+Endpoint:  GET /api/users/:id/certificates  (auth required)
+Output:    PDF file download (application/pdf)
+
+Process:
+  1. upsertCertificate() — find or create Certificate record in DB.
+     issuedAt is preserved on updates (not reset).
+  2. Fetch avatar image buffer (converts DiceBear SVG URLs to PNG).
+  3. Resolve logo.png from Frontend/public/ (multiple path candidates).
+  4. Generate QR code PNG pointing to /verify/:serial.
+  5. Build PDF with pdfkit — all drawing is synchronous.
+  6. Collect PDF chunks into Buffer via 'data' event.
+  7. Await 'end' event → send complete buffer with Content-Length header.
+     (This prevents truncated PDFs — the key fix over the original pipe approach.)
+
+PDF layout:
+  Banner (NAVY, 110px tall):
+    Row 1: Logo + "CivicSync" wordmark (left) | "GOVERNMENT OF PUNJAB" (right)
+    Row 2: Achievement title (centered)
+  Body: Avatar circle, seal, holder name, description, stat boxes,
+        rank, badges, featured issue, QR code, signatures.
+
+Verify page:  /verify/:serial  (public, no auth)
+  Calls GET /api/certificates/verify/:serial
+  Shows holder name, city, rank, hours, solutions, issued date.
+
+
+15) SECURITY NOTES
+------------------
+Secrets
+  - All secrets in environment variables only — never in code or git.
+  - Backend/.env is in .gitignore (both Backend/.gitignore and root .gitignore).
+  - JWT secrets are 64-byte hex — rotate immediately if exposed.
+
+Authentication
+  - Access tokens: JWT, 15-minute expiry, sent in Authorization header.
+  - Refresh tokens: JWT, 7-day expiry, httpOnly cookie (sameSite=none, secure=true in prod).
+  - All protected routes use authRequired middleware.
+  - Role checks enforced server-side via roleGuard middleware.
+
+CORS
+  - Strict origin allowlist from CLIENT_URL env var.
+  - Trailing slashes stripped before comparison.
+  - Vercel preview deployments allowed via regex pattern.
+  - Blocked origins logged to console for debugging.
 
 Uploads
-- /api/upload
-  - POST /image
+  - Multer limits: 8MB max file size.
+  - Only image/* MIME types accepted.
+  - Files stored in Cloudinary — never on disk in production.
 
-Stories / Home content
-- /api/stories
-
-Geo helpers
-- /api/geo
-
-Stats helpers
-- /api/stats
+Production flags
+  - NODE_ENV=production enables secure cookies.
+  - MOCK_OTP must NOT be set in production.
+  - COOKIE_SECURE must NOT be false in production.
 
 
-11) DATA MODEL (HIGH-LEVEL ENTITIES)
-------------------------------------
-The platform revolves around these core entities (MongoDB collections):
-- Users: roles (citizen, mayor, state_admin), rank/xp/karma, badges, adopted spots, service hours
-- Issues: category, location, photos, upvotes, status, SLA fields, AI triage fields, broadcasts, community resolution state, ghost audit state
-- Departments: city/category performance metrics
-- Polls: geofenced local polls with voting
-- Volunteer drives: pledges + items + scheduling
-- Adopted spots: citizen/RWA adoption and upkeep
-- Karma rewards: partner perks redeemed with karma points
-- CSR projects: high-upvote items forwarded for sponsorship interest
-- Ghost audits: scheduled post-resolution verification to detect recurrence
-- Notifications: user-targeted events (broadcasts, SLA breach, rank-up, audits, etc.)
-- Story articles: homepage success stories
+16) KNOWN ISSUES & DNS NOTE
+----------------------------
+Railway domain DNS propagation
+  The domain civic-sync-production.up.railway.app may not resolve on
+  some ISP DNS servers (particularly in Pakistan/India) due to slow
+  propagation. This is not a code issue.
+
+  Workaround for users: set DNS to 8.8.8.8 (Google) on their device
+  or router. The domain resolves correctly on Google DNS.
+
+  For router-level fix (affects all devices on network):
+    Router admin → WAN/DNS settings → Primary: 8.8.8.8, Secondary: 8.8.4.4
+
+logo.png on Railway
+  The certificate service looks for Frontend/public/logo.png relative
+  to the backend process. On Railway, the Backend/ folder is the root,
+  so the logo may not be found and falls back to a gold flag mark.
+  To fix: copy logo.png into Backend/public/ and add that path to
+  the resolveLogoPng() candidates array in certificateService.ts.
+
+Node version
+  mongodb@7.2.0 requires Node ≥ 20.19.0. Railway defaults to Node 18.
+  Fixed via Backend/.node-version (contains "20") and nixpacks.toml.
 
 
-12) BACKGROUND JOBS (CRON)
---------------------------
-The backend starts cron jobs on server startup.
-Examples of scheduled work:
-- SLA breach checks and escalations/notifications
-- Ghost audit scheduling (e.g., long after resolution)
-- Monthly resets (e.g., “super vote” cooldown reset)
-- Red alert acknowledgement monitoring and escalation
+17) ROADMAP STATUS SUMMARY
+---------------------------
+Phase 0 — Stabilize & polish          ~90% complete
+Phase 1 — Identity, trust, roles      ~70% complete
+  1.1 Phone OTP                        ~40% (mock only, no production SMS)
+  1.2 Verified citizen tier            ~50%
+  1.3 Department head role             ~65%
+  1.4 Revised issue lifecycle          0%  (breaking change, deferred)
+  1.5 Contractor role                  ~55%
+Phase 2 — AI triage & analytics       ~65% complete
+  2.1 Gemini triage                    ✅ summary, severity, abuse, translate
+  2.2 Analytics upgrades               ~50%
+  2.3 Priority scoring                 ✅ complete
+Phase 5 — Accountability              ~40% complete
+  5.1 Audit trail                      ~70%
+  5.2 Public city stats                ✅ complete
+Phase 6 — Gamification maturity       ~10% (squads, streaks not started)
+Phase 7 — Offline & mobile-native     ~25%
+
+Next recommended:
+  1. Production SMS for OTP (Twilio/MSG91) — replace MOCK_OTP
+  2. Phase 1.4 issue lifecycle migration
+  3. Phase 6 squad/RWA teams
+  4. Monthly governance PDF export
+  5. Offline issue drafting (IndexedDB)
 
 
-13) TESTING & QA
-----------------
-Use QA.md as the main verification checklist.
-It covers:
-- Public homepage behaviors
-- Authentication and role routing
-- Citizen flows (feed/post/detail/profile)
-- Volunteer hub, polls, karma, notifications
-- Mayor dashboard tabs and enforcement
-- State dashboard and emergency escalation
-- Cross-cutting end-to-end flows (red alert, accountability clock, community resolution, ghost audits, AI triage)
-- Backend endpoint sanity checks
-
-
-14) DEPLOYMENT NOTES
---------------------
-Common setup (typical):
-- Frontend deployed to a static host (Vercel/Netlify/etc.)
-- Backend deployed to a Node host (Render/Fly/Railway/etc.)
-- MongoDB Atlas used for managed database
-
-Key deployment considerations:
-- Configure frontend base URL to call the deployed backend (VITE_API_URL) OR set up reverse proxy paths.
-- Configure backend CORS allowed origins via CLIENT_URL.
-- Use secure cookies for refresh tokens in production (HTTPS required).
-
-
-15) SECURITY NOTES & OPERATIONAL GUIDANCE
------------------------------------------
-- Keep secrets in environment variables only.
-- Rotate JWT secrets if exposed.
-- Use httpOnly cookies for refresh tokens (recommended).
-- Enforce role checks server-side (never rely on UI alone).
-- Validate uploads (type/size), and store only Cloudinary URLs/public IDs.
-- Log and monitor cron actions that affect statuses/SLA flags.
-
-
-16) KEY REFERENCE DOCS IN THIS REPO
------------------------------------
-- plan.md
-  - The detailed blueprint: features, schemas, routes, cron jobs, and intended behavior.
-- QA.md
-  - The full verification checklist for the UI + backend behaviors and cross-role interactions.
+18) REFERENCE DOCS
+------------------
+ROADMAP.md              Sprint-by-sprint progress tracker with task status
+plan.md                 Original backend implementation specification
+QA.md                   End-to-end verification checklist for all role flows
+SEED_CREDENTIALS.md     Demo login credentials for all roles
+PORTS_AND_OAUTH.md      Port configuration and OAuth proxy setup
+GOOGLE_OAUTH_SETUP.md   Google Cloud Console step-by-step OAuth setup
+Backend/.env.production.example  Production environment variable template
 
 
 END OF DOCUMENT
-
